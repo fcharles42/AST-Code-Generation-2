@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+
+# Data (large / generated)
+data/raw/
+data/processed/python_ast.jsonl
+data/processed/python_ast_ids.jsonl
+
+
+# OS
+.DS_Store
+Thumbs.db
+
+requirements.txt
