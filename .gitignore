@@ -11,6 +11,7 @@ venv/
 data/raw/
 data/processed/python_ast.jsonl
 data/processed/python_ast_ids.jsonl
+data/processed/ast_vocab.json
 
 
 # OS
