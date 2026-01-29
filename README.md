@@ -38,18 +38,18 @@ This repository implements a **two-phase training pipeline** for learning
 ---
 ## Reproducing the Pipeline
 
-# Phase 1: AST-only dataset
+### Phase 1: AST-only dataset
 python scripts/preprocess_stack.py
 python scripts/build_ast_vocab.py
 python scripts/encode_dataset.py
 
-# Phase 1 training
+### Phase 1 training
 python train_model_phase1.py
 
-# Phase 2: NL → AST dataset
+### Phase 2: NL → AST dataset
 python scripts/build_nl_ast_pairs.py
 
-# Phase 2 training
+### Phase 2 training
 python train_model_phase2.py
 Then add a one-line disclaimer:
 
