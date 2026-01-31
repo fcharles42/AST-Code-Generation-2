@@ -1,5 +1,5 @@
-import os
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import unsloth
 import json
 import torch
@@ -14,34 +14,13 @@ from ast_codec.tokenizer import ASTTokenizer
 # Config
 # =====================
 
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-
-DATA_PATH = os.path.join(
-    PROJECT_ROOT,
-    "data",
-    "processed",
-    "nl_ast_pairs.jsonl",
-)
-
-AST_VOCAB_PATH = os.path.join(
-    PROJECT_ROOT,
-    "data",
-    "processed",
-    "ast_vocab.json",
-)
-
-LORA_CHECKPOINT = os.path.join(
-    PROJECT_ROOT,
-    "checkpoints",
-    "ast_model",
-    "checkpoint-523",
-)
-
+DATA_PATH = "data/processed/nl_ast_pairs.jsonl"
+AST_VOCAB_PATH = "data/processed/ast_vocab.json"
+LORA_CHECKPOINT = "checkpoints/ast_model/checkpoint-523"
 
 MAX_SEQ_LEN = 4096
 LR = 1e-5
 EPOCHS = 1
-
 DEVICE = "cuda" 
 
 # =====================
@@ -68,7 +47,7 @@ model.config.use_cache = False
 
 BASE_VOCAB_SIZE = len(base_tokenizer)
 ast_tokenizer = ASTTokenizer(AST_VOCAB_PATH)
-NUM_AST_TOKENS = len(ast_tokenizer)
+NUM_AST_TOKENS = len(ast_tokenizer) - 1
 
 model.resize_token_embeddings(
     BASE_VOCAB_SIZE + NUM_AST_TOKENS,
@@ -189,6 +168,7 @@ trainer = Trainer(
         fp16=True,
         max_grad_norm=1.0,
         logging_steps=50,
+        disable_tqdm=False,
         save_steps=400,
         save_total_limit=4,
         report_to="none",

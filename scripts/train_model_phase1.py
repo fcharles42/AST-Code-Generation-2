@@ -1,6 +1,5 @@
-import os
-
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import json
 import unsloth
@@ -17,8 +16,8 @@ from ast_codec.tokenizer import ASTTokenizer
 # Config
 # -------------------------
 MODEL_NAME = "Qwen/Qwen2.5-0.5B"
-AST_VOCAB_PATH = os.path.join(PROJECT_ROOT, "data", "processed", "ast_vocab.json")
-DATA_PATH = os.path.join(PROJECT_ROOT, "data", "processed", "python_ast_ids.jsonl")
+AST_VOCAB_PATH = "data/processed/ast_vocab.json"
+DATA_PATH = "data/processed/python_ast_ids.jsonl"
 
 MAX_SEQ_LEN = 4096
 
@@ -149,6 +148,4 @@ trainer = Trainer(
     ),
 )
 
-ckpt_path = "checkpoints/ast_model/checkpoint-400"
-
-trainer.train(resume_from_checkpoint=ckpt_path)
+trainer.train()

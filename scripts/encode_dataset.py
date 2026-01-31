@@ -1,18 +1,11 @@
 import json
-import os
-import sys
-
-PROJECT_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..")
-)
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from ast_codec.tokenizer import ASTTokenizer
 
-INPUT_PATH = os.path.join(PROJECT_ROOT, "data/processed/python_ast.jsonl")
-OUTPUT_PATH = os.path.join(PROJECT_ROOT, "data/processed/python_ast_ids.jsonl")
-VOCAB_PATH = os.path.join(PROJECT_ROOT, "data/processed/ast_vocab.json")
+INPUT_PATH = "data/processed/python_ast.jsonl"
+OUTPUT_PATH = "data/processed/python_ast_ids.jsonl"
+VOCAB_PATH = "data/processed/ast_vocab.json"
 
 tokenizer = ASTTokenizer(VOCAB_PATH)
 
