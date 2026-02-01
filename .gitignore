@@ -9,7 +9,8 @@ venv/
 
 # Data (large / generated)
 data/raw/
-data/processed/
+data/processed/nl_ast_pairs.jsonl
+data/processed/python_ast_ids.jsonl
 
 
 # OS
