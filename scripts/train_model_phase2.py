@@ -116,17 +116,30 @@ def collate(batch):
     input_ids, labels = [], []
 
     for ex in batch:
-        if "ast_ids" not in ex:
-            continue  # or raise ValueError with context
+        prompt = ex["prompt"]
+        ast_tokens = ex["ast_tokens"]
 
+        # NL prompt
         prompt_ids = base_tokenizer.encode(
-            ex["prompt"],
+            prompt,
             add_special_tokens=False,
         )
 
-        ast_ids = [i + AST_OFFSET for i in ex["ast_ids"]]
+        # AST tokens -> AST vocab ids
+        ast_ids = ast_tokenizer.convert_tokens_to_ids(ast_tokens)
 
-        ids = prompt_ids + [AST_START_ID] + ast_ids
+        # Offset AST ids into extended vocab
+        ast_ids = [i + AST_OFFSET for i in ast_ids]
+
+        # Input sequence
+        ids = (
+            prompt_ids
+            + [AST_START_ID]
+            + ast_ids
+            + [AST_EOS]
+        )
+
+        # Labels (only supervise AST)
         lbl = (
             [-100] * len(prompt_ids)
             + [-100]
@@ -137,11 +150,8 @@ def collate(batch):
         ids = ids[:MAX_SEQ_LEN]
         lbl = lbl[:MAX_SEQ_LEN]
 
-        input_ids.append(torch.tensor(ids))
-        labels.append(torch.tensor(lbl))
-
-    if len(input_ids) == 0:
-        raise ValueError("Empty batch after filtering missing ast_ids")
+        input_ids.append(torch.tensor(ids, dtype=torch.long))
+        labels.append(torch.tensor(lbl, dtype=torch.long))
 
     return {
         "input_ids": torch.nn.utils.rnn.pad_sequence(
