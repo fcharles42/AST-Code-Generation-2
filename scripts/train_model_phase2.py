@@ -116,6 +116,9 @@ def collate(batch):
     input_ids, labels = [], []
 
     for ex in batch:
+        if "ast_ids" not in ex:
+            continue  # or raise ValueError with context
+
         prompt_ids = base_tokenizer.encode(
             ex["prompt"],
             add_special_tokens=False,
@@ -123,17 +126,12 @@ def collate(batch):
 
         ast_ids = [i + AST_OFFSET for i in ex["ast_ids"]]
 
-        ids = (
-            prompt_ids +
-            [AST_START_ID] +
-            ast_ids
-        )
-
+        ids = prompt_ids + [AST_START_ID] + ast_ids
         lbl = (
-            [-100] * len(prompt_ids) +
-            [-100] +        
-            ast_ids +
-            [AST_EOS]
+            [-100] * len(prompt_ids)
+            + [-100]
+            + ast_ids
+            + [AST_EOS]
         )
 
         ids = ids[:MAX_SEQ_LEN]
@@ -142,23 +140,21 @@ def collate(batch):
         input_ids.append(torch.tensor(ids))
         labels.append(torch.tensor(lbl))
 
-    input_ids = torch.nn.utils.rnn.pad_sequence(
-        input_ids,
-        batch_first=True,
-        padding_value=base_tokenizer.pad_token_id,
-    )
-
-    labels = torch.nn.utils.rnn.pad_sequence(
-        labels,
-        batch_first=True,
-        padding_value=-100,
-    )
+    if len(input_ids) == 0:
+        raise ValueError("Empty batch after filtering missing ast_ids")
 
     return {
-        "input_ids": input_ids,
-        "labels": labels,
+        "input_ids": torch.nn.utils.rnn.pad_sequence(
+            input_ids,
+            batch_first=True,
+            padding_value=base_tokenizer.pad_token_id,
+        ),
+        "labels": torch.nn.utils.rnn.pad_sequence(
+            labels,
+            batch_first=True,
+            padding_value=-100,
+        ),
     }
-
 
 # =====================
 # Train
