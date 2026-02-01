@@ -18,7 +18,7 @@ DATA_PATH = "data/processed/nl_ast_pairs.jsonl"
 AST_VOCAB_PATH = "data/processed/ast_vocab.json"
 LORA_CHECKPOINT = "checkpoints/ast_model/checkpoint-523"
 
-MAX_SEQ_LEN = 4096
+MAX_SEQ_LEN = 2048
 LR = 1e-5
 EPOCHS = 1
 DEVICE = "cuda" 
@@ -40,10 +40,12 @@ model, _ = FastLanguageModel.from_pretrained(
     max_seq_length=MAX_SEQ_LEN,
     dtype=torch.float16,
     load_in_4bit=True,
+    use_gradient_checkpointing=True
 )
 
 model.gradient_checkpointing_enable()
 model.config.use_cache = False
+model.config.attn_implementation = "sdpa"
 
 BASE_VOCAB_SIZE = len(base_tokenizer)
 ast_tokenizer = ASTTokenizer(AST_VOCAB_PATH)
@@ -162,7 +164,7 @@ trainer = Trainer(
     args=TrainingArguments(
         output_dir="checkpoints/phase2",
         per_device_train_batch_size=1,
-        gradient_accumulation_steps=16,
+        gradient_accumulation_steps=8,
         learning_rate=LR,
         num_train_epochs=EPOCHS,
         fp16=True,
