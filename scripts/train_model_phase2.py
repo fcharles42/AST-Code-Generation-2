@@ -13,10 +13,19 @@ from ast_codec.tokenizer import ASTTokenizer
 # =====================
 # Config
 # =====================
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(file)))
 
-DATA_PATH = "data/processed/nl_ast_pairs.jsonl"
-AST_VOCAB_PATH = "data/processed/ast_vocab.json"
-LORA_CHECKPOINT = "checkpoints/ast_model/checkpoint-523"
+DATA_PATH = os.path.join(
+    BASE_DIR, "data", "processed", "nl_ast_pairs.jsonl"
+)
+
+AST_VOCAB_PATH = os.path.join(
+    BASE_DIR, "data", "processed", "ast_vocab.json"
+)
+
+LORA_CHECKPOINT = os.path.join(
+    BASE_DIR, "checkpoints", "ast_model", "checkpoint-523"
+)
 
 MAX_SEQ_LEN = 2048
 LR = 1e-5
@@ -162,7 +171,7 @@ trainer = Trainer(
     train_dataset=dataset,
     data_collator=collate,
     args=TrainingArguments(
-        output_dir="checkpoints/phase2",
+        output_dir="/kaggle/working/checkpoints/phase2",
         per_device_train_batch_size=1,
         gradient_accumulation_steps=8,
         learning_rate=LR,
