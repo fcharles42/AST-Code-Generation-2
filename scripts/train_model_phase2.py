@@ -115,6 +115,7 @@ class PromptASTDataset(Dataset):
 def collate(batch):
     input_ids, labels = [], []
 
+    ID_ID = ast_tokenizer.token_to_id["<id>"]
     UNK_ID = ast_tokenizer.token_to_id.get("<unk>", None)
 
     for ex in batch:
@@ -127,12 +128,13 @@ def collate(batch):
         for tok in ex["ast_tokens"]:
             if tok in ast_tokenizer.token_to_id:
                 ast_ids.append(ast_tokenizer.token_to_id[tok])
+            elif tok.startswith("<id:"):
+                ast_ids.append(ID_ID)
             elif UNK_ID is not None:
                 ast_ids.append(UNK_ID)
             else:
                 raise KeyError(f"Unknown AST token: {tok}")
 
-        # Offset AST ids into LM vocab space
         ast_ids = [i + AST_OFFSET for i in ast_ids]
 
         ids = (
@@ -142,7 +144,7 @@ def collate(batch):
             + [AST_EOS]
         )
 
-        labels_ = (
+        lbl = (
             [-100] * len(prompt_ids)
             + [-100]
             + ast_ids
@@ -150,10 +152,10 @@ def collate(batch):
         )
 
         ids = ids[:MAX_SEQ_LEN]
-        labels_ = labels_[:MAX_SEQ_LEN]
+        lbl = lbl[:MAX_SEQ_LEN]
 
         input_ids.append(torch.tensor(ids, dtype=torch.long))
-        labels.append(torch.tensor(labels_, dtype=torch.long))
+        labels.append(torch.tensor(lbl, dtype=torch.long))
 
     return {
         "input_ids": torch.nn.utils.rnn.pad_sequence(
