@@ -15,8 +15,8 @@ from ast_codec.tokenizer import ASTTokenizer
 # =====================
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-DATA_PATH = os.path.join(
-    BASE_DIR, "data", "processed", "nl_ast_pairs.jsonl"
+DATA_PATH = (
+    "/kaggle/working/data/processed/nl_ast_pairs.jsonl"
 )
 
 AST_VOCAB_PATH = os.path.join(
