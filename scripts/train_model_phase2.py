@@ -58,7 +58,7 @@ model.config.attn_implementation = "sdpa"
 
 BASE_VOCAB_SIZE = len(base_tokenizer)
 ast_tokenizer = ASTTokenizer(AST_VOCAB_PATH)
-NUM_AST_TOKENS = len(ast_tokenizer) - 1
+NUM_AST_TOKENS = len(ast_tokenizer)
 
 model.resize_token_embeddings(
     BASE_VOCAB_SIZE + NUM_AST_TOKENS,
