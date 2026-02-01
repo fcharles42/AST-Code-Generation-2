@@ -23,8 +23,8 @@ AST_VOCAB_PATH = os.path.join(
     BASE_DIR, "data", "processed", "ast_vocab.json"
 )
 
-LORA_CHECKPOINT = os.path.join(
-    BASE_DIR, "checkpoints", "ast_model", "checkpoint-523"
+LORA_CHECKPOINT = (
+    "/kaggle/input/checkpoint/checkpoints/ast_model/checkpoint-523"
 )
 
 MAX_SEQ_LEN = 2048
