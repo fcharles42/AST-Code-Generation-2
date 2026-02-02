@@ -143,7 +143,7 @@ def collate(batch):
         "labels": torch.nn.utils.rnn.pad_sequence(
             labels,
             batch_first=True,
-            padding_value=-100,
+            padding_value=base_tokenizer.pad_token_id,
         ),
     }
 
