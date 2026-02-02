@@ -115,10 +115,8 @@ class PromptASTDataset(Dataset):
 def collate(batch):
     input_ids, labels = [], []
 
-    ID_ID = ast_tokenizer.token_to_id["<id>"]
-    UNK_ID = ast_tokenizer.token_to_id.get("<unk>", None)
-
     for ex in batch:
+        # Encode natural language prompt
         prompt_ids = base_tokenizer.encode(
             ex["prompt"],
             add_special_tokens=False,
@@ -128,15 +126,18 @@ def collate(batch):
         for tok in ex["ast_tokens"]:
             if tok in ast_tokenizer.token_to_id:
                 ast_ids.append(ast_tokenizer.token_to_id[tok])
-            elif tok.startswith("<id:"):
-                ast_ids.append(ID_ID)
-            elif UNK_ID is not None:
-                ast_ids.append(UNK_ID)
+
+            # Fix for raw operator token
+            elif tok == "BitXor" and "<op:BitXor>" in ast_tokenizer.token_to_id:
+                ast_ids.append(ast_tokenizer.token_to_id["<op:BitXor>"])
+
             else:
                 raise KeyError(f"Unknown AST token: {tok}")
 
+        # Offset AST ids into LM vocab space
         ast_ids = [i + AST_OFFSET for i in ast_ids]
 
+        # Input sequence
         ids = (
             prompt_ids
             + [AST_START_ID]
@@ -144,6 +145,7 @@ def collate(batch):
             + [AST_EOS]
         )
 
+        # Labels (only supervise AST)
         lbl = (
             [-100] * len(prompt_ids)
             + [-100]
