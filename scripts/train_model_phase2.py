@@ -179,9 +179,21 @@ def collate(batch):
 # =====================
 # Train
 # =====================
+
+class SafeTrainer(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False):
+        outputs = model(**inputs)
+        loss = outputs.loss
+
+        # Unsloth sometimes gets loss = int(0)
+        if not torch.is_tensor(loss):
+            loss = torch.tensor(loss, device=outputs.logits.device)
+
+        return (loss, outputs) if return_outputs else loss
+        
 dataset = PromptASTDataset(DATA_PATH)
 
-trainer = Trainer(
+trainer = SafeTrainer(
     model=model,
     tokenizer=base_tokenizer,
     train_dataset=dataset,
