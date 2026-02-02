@@ -116,15 +116,13 @@ def collate(batch):
     input_ids, labels = [], []
 
     vocab = ast_tokenizer.token_to_id
+    PAD_ID = ast_tokenizer.pad_id
 
-    # Pick ONE canonical ID token (any one is fine)
+    # One canonical ID token
     CANONICAL_ID_TOKEN = next(t for t in ast_tokenizer.vocab if t.startswith("<id:"))
     CANONICAL_ID_ID = vocab[CANONICAL_ID_TOKEN]
 
-    PAD_ID = ast_tokenizer.pad_id
-
     for ex in batch:
-        # Encode prompt
         prompt_ids = base_tokenizer.encode(
             ex["prompt"],
             add_special_tokens=False,
@@ -132,44 +130,49 @@ def collate(batch):
 
         ast_ids = []
         for tok in ex["ast_tokens"]:
-            # 1. Exact match
             if tok in vocab:
                 ast_ids.append(vocab[tok])
-
-            # 2. Any identifier → canonical ID
             elif tok.startswith("<id:"):
                 ast_ids.append(CANONICAL_ID_ID)
-
-            # 3. Bare operator name → <op:*> if exists
             elif f"<op:{tok}>" in vocab:
                 ast_ids.append(vocab[f"<op:{tok}>"])
-
-            # 4. Absolute fallback (never crash)
             else:
                 ast_ids.append(PAD_ID)
 
-        # Offset AST ids into LM vocab
+        # Offset AST ids into LM vocab space
         ast_ids = [i + AST_OFFSET for i in ast_ids]
 
         ids = (
             prompt_ids
             + [AST_START_ID]
             + ast_ids
-            + [AST_EOS]
+            + [AST_EOS_ID]
         )
 
         lbl = (
             [-100] * len(prompt_ids)
             + [-100]
             + ast_ids
-            + [AST_EOS]
+            + [AST_EOS_ID]
         )
 
         ids = ids[:MAX_SEQ_LEN]
         lbl = lbl[:MAX_SEQ_LEN]
 
+        # 🚨 CRITICAL FIX:
+        # Drop samples with zero supervised tokens
+        if not any(x != -100 for x in lbl):
+            continue
+
         input_ids.append(torch.tensor(ids, dtype=torch.long))
         labels.append(torch.tensor(lbl, dtype=torch.long))
+
+    # If entire batch was dropped, return safe dummy batch
+    if len(input_ids) == 0:
+        return {
+            "input_ids": torch.zeros((1, 1), dtype=torch.long),
+            "labels": torch.full((1, 1), -100, dtype=torch.long),
+        }
 
     return {
         "input_ids": torch.nn.utils.rnn.pad_sequence(
