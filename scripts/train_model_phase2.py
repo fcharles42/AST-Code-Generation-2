@@ -153,7 +153,7 @@ def collate(batch):
             [-100] * len(prompt_ids)
             + [-100]
             + ast_ids
-            + [AST_EOS_ID]
+            + [AST_EOS]
         )
 
         ids = ids[:MAX_SEQ_LEN]
