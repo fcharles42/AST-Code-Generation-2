@@ -192,14 +192,13 @@ class SafeTrainer(Trainer):
         outputs = model(**inputs)
         loss = outputs.loss
 
-        # 🔒 Unsloth / HF edge case:
-        # loss may be Python int(0) OR a detached tensor
         if not torch.is_tensor(loss) or not loss.requires_grad:
-            # create zero loss WITH grad graph
-            loss = outputs.logits.sum() * 0.0
+            loss = (
+                sum(p.sum() for p in model.parameters() if p.requires_grad) * 0.0
+            )
 
         return (loss, outputs) if return_outputs else loss
-        
+
 dataset = PromptASTDataset(DATA_PATH)
 
 trainer = SafeTrainer(
