@@ -115,8 +115,16 @@ class PromptASTDataset(Dataset):
 def collate(batch):
     input_ids, labels = [], []
 
+    vocab = ast_tokenizer.token_to_id
+
+    # Pick ONE canonical ID token (any one is fine)
+    CANONICAL_ID_TOKEN = next(t for t in ast_tokenizer.vocab if t.startswith("<id:"))
+    CANONICAL_ID_ID = vocab[CANONICAL_ID_TOKEN]
+
+    PAD_ID = ast_tokenizer.pad_id
+
     for ex in batch:
-        # Encode natural language prompt
+        # Encode prompt
         prompt_ids = base_tokenizer.encode(
             ex["prompt"],
             add_special_tokens=False,
@@ -124,20 +132,25 @@ def collate(batch):
 
         ast_ids = []
         for tok in ex["ast_tokens"]:
-            if tok in ast_tokenizer.token_to_id:
-                ast_ids.append(ast_tokenizer.token_to_id[tok])
+            # 1. Exact match
+            if tok in vocab:
+                ast_ids.append(vocab[tok])
 
-            # Fix for raw operator token
-            elif tok == "BitXor" and "<op:BitXor>" in ast_tokenizer.token_to_id:
-                ast_ids.append(ast_tokenizer.token_to_id["<op:BitXor>"])
+            # 2. Any identifier → canonical ID
+            elif tok.startswith("<id:"):
+                ast_ids.append(CANONICAL_ID_ID)
 
+            # 3. Bare operator name → <op:*> if exists
+            elif f"<op:{tok}>" in vocab:
+                ast_ids.append(vocab[f"<op:{tok}>"])
+
+            # 4. Absolute fallback (never crash)
             else:
-                raise KeyError(f"Unknown AST token: {tok}")
+                ast_ids.append(PAD_ID)
 
-        # Offset AST ids into LM vocab space
+        # Offset AST ids into LM vocab
         ast_ids = [i + AST_OFFSET for i in ast_ids]
 
-        # Input sequence
         ids = (
             prompt_ids
             + [AST_START_ID]
@@ -145,7 +158,6 @@ def collate(batch):
             + [AST_EOS]
         )
 
-        # Labels (only supervise AST)
         lbl = (
             [-100] * len(prompt_ids)
             + [-100]
