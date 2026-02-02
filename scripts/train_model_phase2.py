@@ -146,7 +146,7 @@ def collate(batch):
             prompt_ids
             + [AST_START_ID]
             + ast_ids
-            + [AST_EOS_ID]
+            + [AST_EOS]
         )
 
         lbl = (
@@ -159,8 +159,6 @@ def collate(batch):
         ids = ids[:MAX_SEQ_LEN]
         lbl = lbl[:MAX_SEQ_LEN]
 
-        # 🚨 CRITICAL FIX:
-        # Drop samples with zero supervised tokens
         if not any(x != -100 for x in lbl):
             continue
 
