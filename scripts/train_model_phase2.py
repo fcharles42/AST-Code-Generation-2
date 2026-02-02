@@ -118,7 +118,6 @@ def collate(batch):
     vocab = ast_tokenizer.token_to_id
     PAD_ID = ast_tokenizer.pad_id
 
-    # One canonical ID token
     CANONICAL_ID_TOKEN = next(t for t in ast_tokenizer.vocab if t.startswith("<id:"))
     CANONICAL_ID_ID = vocab[CANONICAL_ID_TOKEN]
 
@@ -127,6 +126,13 @@ def collate(batch):
             ex["prompt"],
             add_special_tokens=False,
         )
+
+        # Reserve space for AST_START + AST + EOS
+        MAX_PROMPT_LEN = MAX_SEQ_LEN - (len(ex["ast_tokens"]) + 2)
+        if MAX_PROMPT_LEN <= 0:
+            continue
+
+        prompt_ids = prompt_ids[:MAX_PROMPT_LEN]
 
         ast_ids = []
         for tok in ex["ast_tokens"]:
@@ -139,38 +145,23 @@ def collate(batch):
             else:
                 ast_ids.append(PAD_ID)
 
-        # Offset AST ids into LM vocab space
         ast_ids = [i + AST_OFFSET for i in ast_ids]
 
-        ids = (
-            prompt_ids
-            + [AST_START_ID]
-            + ast_ids
-            + [AST_EOS]
-        )
-
-        lbl = (
-            [-100] * len(prompt_ids)
-            + [-100]
-            + ast_ids
-            + [AST_EOS]
-        )
-
-        ids = ids[:MAX_SEQ_LEN]
-        lbl = lbl[:MAX_SEQ_LEN]
-
-        if not any(x != -100 for x in lbl):
-            continue
+        ids = prompt_ids + [AST_START_ID] + ast_ids + [AST_EOS]
+        lbl = [-100] * len(prompt_ids) + [-100] + ast_ids + [AST_EOS]
 
         input_ids.append(torch.tensor(ids, dtype=torch.long))
         labels.append(torch.tensor(lbl, dtype=torch.long))
 
-    # If entire batch was dropped, return safe dummy batch
     if len(input_ids) == 0:
-        return {
-            "input_ids": torch.zeros((1, 1), dtype=torch.long),
-            "labels": torch.full((1, 1), -100, dtype=torch.long),
-        }
+        ex = batch[0]
+        prompt_ids = base_tokenizer.encode(ex["prompt"], add_special_tokens=False)[:32]
+        ast_ids = [CANONICAL_ID_ID + AST_OFFSET]
+        ids = prompt_ids + [AST_START_ID] + ast_ids + [AST_EOS]
+        lbl = [-100] * len(prompt_ids) + [-100] + ast_ids + [AST_EOS]
+
+        input_ids = [torch.tensor(ids, dtype=torch.long)]
+        labels = [torch.tensor(lbl, dtype=torch.long)]
 
     return {
         "input_ids": torch.nn.utils.rnn.pad_sequence(
