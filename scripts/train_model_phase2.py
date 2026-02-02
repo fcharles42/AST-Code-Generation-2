@@ -1,4 +1,5 @@
 import sys, os
+os.environ["UNSLOTH_RETURN_LOGITS"] = "1"
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import unsloth
 import json
