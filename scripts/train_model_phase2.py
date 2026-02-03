@@ -1,15 +1,17 @@
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 import torch
 from torch.utils.data import Dataset
 from peft import PeftModel
 from transformers import Trainer, TrainingArguments, AutoTokenizer, AutoModelForCausalLM
+from ast_codec.tokenizer import ASTTokenizer
 
 # =====================
 # Config
 # =====================
 MODEL_NAME = "Qwen/Qwen2.5-0.5B"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+AST_VOCAB_PATH = os.path.join(BASE_DIR, "data", "processed", "ast_vocab.json")
 TOKENIZED_PATH = "/kaggle/working/data/processed/tokenized.pt"
 LORA_CHECKPOINT = "/kaggle/input/checkpoint/checkpoints/ast_model/checkpoint-523"
 
@@ -34,7 +36,16 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto",
 )
 model.config.use_cache = False
-model.resize_token_embeddings(model.get_input_embeddings().weight.size(0))
+
+# =====================
+# Resize embeddings to match LoRA checkpoint
+# =====================
+ast_tokenizer = ASTTokenizer(AST_VOCAB_PATH)
+
+BASE_VOCAB_SIZE = len(tokenizer)
+NUM_AST_TOKENS = len(ast_tokenizer)
+
+model.resize_token_embeddings(BASE_VOCAB_SIZE + NUM_AST_TOKENS)
 
 # =====================
 # Load LoRA
