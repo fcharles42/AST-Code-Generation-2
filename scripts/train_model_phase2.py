@@ -35,7 +35,6 @@ base_tokenizer.pad_token = base_tokenizer.eos_token
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
     torch_dtype=torch.float16,
-    load_in_4bit=True,
     device_map="auto",
 )
 
@@ -170,7 +169,7 @@ trainer = Trainer(
         save_steps=400,
         save_total_limit=2,
         report_to="none",
-        optim="paged_adamw_8bit",
+        optim="adamw_torch",
         remove_unused_columns=False,
     ),
 )
