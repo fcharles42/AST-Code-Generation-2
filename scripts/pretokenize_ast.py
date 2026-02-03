@@ -3,10 +3,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from transformers import AutoTokenizer
 from ast_codec.tokenizer import ASTTokenizer
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_NAME = "Qwen/Qwen2.5-0.5B"
 DATA_PATH = "/kaggle/working/data/processed/nl_ast_pairs.jsonl"
 OUT_PATH = "/kaggle/working/data/processed/tokenized.pt"
-AST_VOCAB_PATH = "/kaggle/input/astcodes/data/processed/ast_vocab.json"
+AST_VOCAB_PATH = os.path.join(BASE_DIR, "data", "processed", "ast_vocab.json")
 
 MAX_SEQ_LEN = 512
 
