@@ -1,4 +1,4 @@
-import json, os, torch
+import json, os, torch, sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from transformers import AutoTokenizer
 from ast_codec.tokenizer import ASTTokenizer
