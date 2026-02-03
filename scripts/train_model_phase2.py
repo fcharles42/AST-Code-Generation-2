@@ -1,15 +1,11 @@
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 import json
-import random
 import torch
-from torch.utils.data import Dataset
-
-from transformers import Trainer, TrainingArguments, AutoTokenizer
-from unsloth import FastLanguageModel
+import random
 from peft import PeftModel
-
+from torch.utils.data import Dataset
+from transformers import Trainer, TrainingArguments, AutoTokenizer, AutoModelForCausalLM
 from ast_codec.tokenizer import ASTTokenizer
 
 # =====================
@@ -36,12 +32,11 @@ base_tokenizer = AutoTokenizer.from_pretrained(
 )
 base_tokenizer.pad_token = base_tokenizer.eos_token
 
-model, _ = FastLanguageModel.from_pretrained(
-    model_name=MODEL_NAME,
-    max_seq_length=MAX_SEQ_LEN,
-    dtype=torch.float16,
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_NAME,
+    torch_dtype=torch.float16,
     load_in_4bit=True,
-    use_gradient_checkpointing=True,
+    device_map="auto",
 )
 
 model.gradient_checkpointing_enable()
@@ -102,13 +97,13 @@ def collate(batch):
     CANONICAL_ID = next(vocab[t] for t in ast_tokenizer.vocab if t.startswith("<id:"))
 
     for ex in batch:
-        # Encode natural language prompt
+        # Encode prompt
         prompt_ids = base_tokenizer.encode(
             ex["prompt"],
             add_special_tokens=False,
         )
 
-        # Encode AST tokens
+        # Encode AST
         ast_ids = []
         for tok in ex["ast_tokens"]:
             if tok in vocab:
@@ -129,7 +124,14 @@ def collate(batch):
 
         ids = ids[:MAX_SEQ_LEN]
 
-        lbl = ids.copy()
+        lbl = (
+            [-100] * len(prompt_ids)
+            + [-100]               # AST_BOS
+            + ast_ids
+            + [AST_EOS]
+        )
+
+        lbl = lbl[:MAX_SEQ_LEN]
 
         input_ids.append(torch.tensor(ids, dtype=torch.long))
         labels.append(torch.tensor(lbl, dtype=torch.long))
@@ -143,7 +145,7 @@ def collate(batch):
         "labels": torch.nn.utils.rnn.pad_sequence(
             labels,
             batch_first=True,
-            padding_value=base_tokenizer.pad_token_id,
+            padding_value=-100,
         ),
     }
 
