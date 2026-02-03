@@ -18,7 +18,7 @@ DATA_PATH = "/kaggle/working/data/processed/nl_ast_pairs.jsonl"
 AST_VOCAB_PATH = os.path.join(BASE_DIR, "data", "processed", "ast_vocab.json")
 LORA_CHECKPOINT = "/kaggle/input/checkpoint/checkpoints/ast_model/checkpoint-523"
 
-MAX_SEQ_LEN = 2048
+MAX_SEQ_LEN = 512
 LR = 1e-5
 EPOCHS = 1
 
@@ -38,7 +38,6 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto",
 )
 
-model.gradient_checkpointing_enable()
 model.config.use_cache = False
 
 # =====================
@@ -162,6 +161,7 @@ trainer = Trainer(
         output_dir="/kaggle/working/checkpoints/phase2",
         per_device_train_batch_size=1,
         gradient_accumulation_steps=8,
+        max_steps=10000,
         learning_rate=LR,
         num_train_epochs=EPOCHS,
         fp16=True,
