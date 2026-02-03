@@ -7,7 +7,7 @@ DATA_PATH = "/kaggle/working/data/processed/nl_ast_pairs.jsonl"
 OUT_PATH = "/kaggle/working/data/processed/tokenized.pt"
 AST_VOCAB_PATH = "/kaggle/input/astcodes/data/processed/ast_vocab.json"
 
-MAX_SEQ_LEN = 384
+MAX_SEQ_LEN = 512
 
 base_tokenizer = AutoTokenizer.from_pretrained(
     MODEL_NAME, trust_remote_code=True, use_fast=True
