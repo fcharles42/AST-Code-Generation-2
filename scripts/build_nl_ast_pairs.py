@@ -25,8 +25,8 @@ DATASET_NAME = "code_search_net"
 LANGUAGE = "python"
 SPLIT = "train"
 
-MAX_SAMPLES = 20_000        
-MAX_AST_TOKENS = 4096      
+MAX_SAMPLES = 10_000        
+MAX_AST_TOKENS = 2048      
 MIN_DOCSTRING_LEN = 1     
 
 # ======================================================
