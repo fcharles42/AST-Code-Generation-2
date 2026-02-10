@@ -38,24 +38,26 @@ This repository implements a **two-phase training pipeline** for learning
 ---
 ## Reproducing the Pipeline
 
-### Phase 1: AST-only dataset
-python scripts/preprocess_stack.py
-python scripts/build_ast_vocab.py
-python scripts/encode_dataset.py
+## Folder outputs
+- data/processed/
+- checkpoints/
+- results/
 
-### Phase 1 training
-python train_model_phase1.py
+## Pipeline order
 
-### Phase 2: NL → AST dataset
-python scripts/build_nl_ast_pairs.py
+python scripts/00_build_ast_vocab.py
+python scripts/01_build_phase1_ast_dataset.py
+python scripts/02_build_phase2_nl_ast_dataset.py
+python scripts/03_tokenize_phase1.py
+python scripts/04_tokenize_phase2.py
+python scripts/05_train_phase1.py
+python scripts/06_train_phase2.py
+python scripts/07_merge_lora.py
+python scripts/08_eval.py
+python scripts/09_sanity_generate.py
 
-### Phase 2 training
-python train_model_phase2.py
-Then add a one-line disclaimer:
-
-## Status
-
-- AST codec: complete
-- Phase 1 training: complete
-- Phase 2 training: dataset creation is complete; training pending
-- Evaluation: not yet implemented
+## Notes
+- Uses Qwen/Qwen2.5-0.5B as base model
+- Uses LoRA fine-tuning
+- Uses deterministic AST vocab generation
+- Uses hybrid AST + BPE encoding for identifiers and literals
