@@ -73,7 +73,7 @@ def main():
 
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME,
-        torch_dtype=torch.float16,
+        dtype=torch.float16,
         device_map="auto",
     )
     model.config.use_cache = False
@@ -99,7 +99,6 @@ def main():
 
     trainer = Trainer(
         model=model,
-        tokenizer=tokenizer,
         train_dataset=dataset,
         data_collator=lambda b: collate(b, tokenizer.pad_token_id),
         args=TrainingArguments(

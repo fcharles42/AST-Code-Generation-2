@@ -96,7 +96,7 @@ def main():
     # Load base model
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        torch_dtype=torch.float16,
+        dtype=torch.float16,
         device_map="auto",
     )
     model.config.use_cache = False
