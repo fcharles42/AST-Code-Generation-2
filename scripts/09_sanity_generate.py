@@ -11,7 +11,7 @@ from ast_codec.codec import tokens_to_ast, ast_to_code
 MODEL_NAME = "Qwen/Qwen2.5-0.5B"
 
 AST_VOCAB_PATH = os.path.join(REPO_ROOT, "data", "processed", "ast_vocab.json")
-PHASE2_LORA = os.path.join(REPO_ROOT, "checkpoints", "phase2_lora")
+PHASE2_LORA = "/kaggle/input/phase2/content/AST-Code-Generation-2/checkpoints/phase2_lora"
 
 OUT_PATH = os.path.join(REPO_ROOT, "results", "samples", "sample_generations.json")
 
