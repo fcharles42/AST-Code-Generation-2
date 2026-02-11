@@ -15,6 +15,79 @@ from ast_codec.tokenize_ast_sequence import encode_codec_tokens
 OPEN = "<open>"
 CLOSE = "<close>"
 
+# ============================
+# Payload wrapper tokens
+# ============================
+PAYLOAD_BEGIN_TOKENS = {
+    "<id>",
+    "<lit_str>",
+    "<lit_int>",
+    "<lit_float>",
+    "<lit_bool>",
+}
+
+PAYLOAD_END_TOKENS = {
+    "</id>",
+    "</lit_str>",
+    "</lit_int>",
+    "</lit_float>",
+    "</lit_bool>",
+}
+
+PAYLOAD_PAIR = {
+    "<id>": "</id>",
+    "<lit_str>": "</lit_str>",
+    "<lit_int>": "</lit_int>",
+    "<lit_float>": "</lit_float>",
+    "<lit_bool>": "</lit_bool>",
+}
+
+
+def decode_generated_codec_tokens(gen_ids, tokenizer):
+    """
+    Convert generated token IDs back into codec token list.
+    note: Payload segments (base64 strings) are multi-token under HF tokenizer,
+    so we must decode them back into ONE string token between <id> ... </id>.
+    """
+    tokens = []
+    i = 0
+
+    while i < len(gen_ids):
+        tok = tokenizer.convert_ids_to_tokens(gen_ids[i])
+
+        # Payload wrapper begin
+        if tok in PAYLOAD_BEGIN_TOKENS:
+            tokens.append(tok)
+            end_tok = PAYLOAD_PAIR[tok]
+
+            i += 1
+            payload_ids = []
+
+            # Collect all ids until we hit end token
+            while i < len(gen_ids):
+                cur_tok = tokenizer.convert_ids_to_tokens(gen_ids[i])
+                if cur_tok == end_tok:
+                    break
+                payload_ids.append(gen_ids[i])
+                i += 1
+
+            # Decode payload chunk back into raw text (base64)
+            payload_text = tokenizer.decode(payload_ids, skip_special_tokens=False)
+            tokens.append(payload_text)
+
+            # Add end tag if present
+            if i < len(gen_ids):
+                tokens.append(end_tok)
+                i += 1
+
+            continue
+
+        # Normal AST structural token
+        tokens.append(tok)
+        i += 1
+
+    return tokens
+
 
 def bracket_balance_ok(tokens):
     return tokens.count(OPEN) == tokens.count(CLOSE)
@@ -100,7 +173,6 @@ def main():
         device_map="auto",
     )
     model.config.use_cache = False
-
     model.resize_token_embeddings(len(tokenizer))
 
     model = PeftModel.from_pretrained(model, args.phase2_lora, is_trainable=False)
@@ -162,7 +234,16 @@ def main():
             eos_idx = gen_ast_ids.index(ast_eos_id)
             gen_ast_ids = gen_ast_ids[:eos_idx]
 
-        gen_ast_tokens = tokenizer.convert_ids_to_tokens(gen_ast_ids)
+
+        gen_ast_tokens = decode_generated_codec_tokens(gen_ast_ids, tokenizer)
+
+        if total <= 3:
+            print("\n================ DEBUG SAMPLE ================")
+            print("PROMPT:", prompt[:200])
+            print("GEN TOKENS (first 200):")
+            print(gen_ast_tokens[:200])
+            print("================================================\n")
+
 
         if len(gen_ast_tokens) == 0:
             continue
@@ -176,6 +257,9 @@ def main():
                 decoded_ok_flag = True
             except Exception:
                 decoded_ok_flag = False
+                if total <= 5:
+                    print("\n[DECODE ERROR]", str(e))
+                    print("First 100 gen tokens:", gen_ast_tokens[:100])
 
         if decoded_ok_flag:
             decode_ok += 1
@@ -248,6 +332,7 @@ def main():
                 "ted": ted,
                 "node_f1": f1,
             }
+
             if decoded_ok_flag:
                 try:
                     row["generated_code"] = ast_to_code(decoded_tree)
