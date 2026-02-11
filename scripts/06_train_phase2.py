@@ -9,13 +9,18 @@ sys.path.insert(0, REPO_ROOT)
 
 MODEL_NAME = "Qwen/Qwen2.5-0.5B"
 
-PHASE1_DIR = os.path.join(REPO_ROOT, "checkpoints", "phase1_lora")
+# Use phase1 checkpoint from Kaggle input first (preferred path)
+PHASE1_DIR = "/kaggle/input/phase1/content/AST-Code-Generation-2/checkpoints/phase1_lora"
+if not os.path.exists(PHASE1_DIR):
+    # Fallback to local checkpoint if Kaggle input doesn't exist
+    PHASE1_DIR = os.path.join(REPO_ROOT, "checkpoints", "phase1_lora")
+
 PHASE2_OUT_DIR = os.path.join(REPO_ROOT, "checkpoints", "phase2_lora")
 
 TOKENIZED_PATH = os.path.join(REPO_ROOT, "data", "processed", "phase2_tokenized.pt")
 
 LR = 1e-5
-MAX_STEPS = 5000
+MAX_STEPS = 1250
 BATCH_SIZE = 2
 GRAD_ACCUM = 4
 
