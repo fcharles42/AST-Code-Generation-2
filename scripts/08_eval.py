@@ -1,4 +1,3 @@
-# scripts/eval  .py
 import os, sys, json, math, argparse
 from collections import Counter
 
@@ -12,7 +11,6 @@ sys.path.insert(0, REPO_ROOT)
 
 from ast_codec.codec import tokens_to_ast, ast_to_code, ast_to_tokens
 from ast_codec.tokenize_ast_sequence import encode_codec_tokens
-
 
 OPEN = "<open>"
 CLOSE = "<close>"
@@ -78,33 +76,33 @@ def main():
 
     args = parser.parse_args()
 
-    # ---------------------------------------------------------
-    # IMPORTANT:
-    # tokenizer must come from adapter dir because it contains
-    # added AST vocab tokens
-    # ---------------------------------------------------------
+    AST_VOCAB_PATH = os.path.join(REPO_ROOT, "data", "processed", "ast_vocab.json")
+    if not os.path.exists(AST_VOCAB_PATH):
+        raise FileNotFoundError(f"Missing ast_vocab.json: {AST_VOCAB_PATH}")
+
     tokenizer = AutoTokenizer.from_pretrained(
-        args.phase2_lora,
+        args.model,
         trust_remote_code=True,
         use_fast=True,
     )
     tokenizer.pad_token = tokenizer.eos_token
 
-    print("[INFO] Loaded tokenizer from:", args.phase2_lora)
+    with open(AST_VOCAB_PATH, "r", encoding="utf-8") as f:
+        ast_vocab = json.load(f)
+
+    added = tokenizer.add_tokens(ast_vocab, special_tokens=False)
+    print("[INFO] Added AST tokens:", added)
     print("[INFO] Tokenizer vocab size:", len(tokenizer))
 
-    # Load base model
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        dtype=torch.float16,
+        torch_dtype=torch.float16,
         device_map="auto",
     )
     model.config.use_cache = False
 
-    # Resize embeddings BEFORE loading adapter
     model.resize_token_embeddings(len(tokenizer))
 
-    # Load phase2 adapter
     model = PeftModel.from_pretrained(model, args.phase2_lora, is_trainable=False)
     model.eval()
 
@@ -116,7 +114,6 @@ def main():
     if ast_eos_id == tokenizer.unk_token_id:
         raise ValueError("Tokenizer missing <ast_eos>")
 
-    # Load dataset
     data = []
     with open(args.data, "r", encoding="utf-8") as f:
         for line in f:
@@ -159,7 +156,7 @@ def main():
             )
 
         gen_seq = gen_out[0].tolist()
-        gen_ast_ids = gen_seq[len(prompt_ids) + 1 :]
+        gen_ast_ids = gen_seq[len(prompt_ids) + 1:]
 
         if ast_eos_id in gen_ast_ids:
             eos_idx = gen_ast_ids.index(ast_eos_id)
@@ -183,7 +180,6 @@ def main():
         if decoded_ok_flag:
             decode_ok += 1
 
-        # roundtrip
         rt_ok = False
         if decoded_ok_flag:
             try:
@@ -195,7 +191,6 @@ def main():
         if rt_ok:
             roundtrip_ok += 1
 
-        # compile
         comp_ok = False
         if decoded_ok_flag:
             try:
@@ -209,7 +204,6 @@ def main():
         if comp_ok:
             compile_ok += 1
 
-        # similarity
         ted = None
         f1 = None
 
@@ -225,7 +219,6 @@ def main():
             ted_scores.append(ted)
             node_f1_scores.append(f1)
 
-        # ppl on reference AST
         try:
             ref_ast_ids = encode_codec_tokens(ref_ast_tokens, tokenizer)
         except Exception:

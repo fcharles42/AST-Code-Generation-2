@@ -1,4 +1,3 @@
-# scripts/09_sanity_generate.py
 import os, sys, json, ast
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -10,6 +9,8 @@ sys.path.insert(0, REPO_ROOT)
 from ast_codec.codec import tokens_to_ast, ast_to_code
 
 MODEL_NAME = "Qwen/Qwen2.5-0.5B"
+
+AST_VOCAB_PATH = os.path.join(REPO_ROOT, "data", "processed", "ast_vocab.json")
 PHASE2_LORA = os.path.join(REPO_ROOT, "checkpoints", "phase2_lora")
 
 OUT_PATH = os.path.join(REPO_ROOT, "results", "samples", "sample_generations.json")
@@ -31,11 +32,22 @@ def main():
     if not os.path.exists(PHASE2_LORA):
         raise FileNotFoundError(f"Missing phase2_lora directory: {PHASE2_LORA}")
 
-    # IMPORTANT: tokenizer must come from adapter dir
-    tokenizer = AutoTokenizer.from_pretrained(PHASE2_LORA, trust_remote_code=True)
+    if not os.path.exists(AST_VOCAB_PATH):
+        raise FileNotFoundError(f"Missing ast_vocab.json: {AST_VOCAB_PATH}")
+
+    # ALWAYS rebuild tokenizer from base model
+    tokenizer = AutoTokenizer.from_pretrained(
+        MODEL_NAME,
+        trust_remote_code=True,
+        use_fast=True,
+    )
     tokenizer.pad_token = tokenizer.eos_token
 
-    print("[INFO] Loaded tokenizer from:", PHASE2_LORA)
+    with open(AST_VOCAB_PATH, "r", encoding="utf-8") as f:
+        ast_vocab = json.load(f)
+
+    added = tokenizer.add_tokens(ast_vocab, special_tokens=False)
+    print("[INFO] Added AST tokens:", added)
     print("[INFO] Tokenizer vocab size:", len(tokenizer))
 
     model = AutoModelForCausalLM.from_pretrained(
@@ -74,7 +86,7 @@ def main():
             )
 
         gen_ids = out[0].tolist()
-        gen_ast_ids = gen_ids[len(prompt_ids) + 1 :]
+        gen_ast_ids = gen_ids[len(prompt_ids) + 1:]
 
         if ast_eos_id in gen_ast_ids:
             gen_ast_ids = gen_ast_ids[: gen_ast_ids.index(ast_eos_id)]
