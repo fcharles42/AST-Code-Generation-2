@@ -9,7 +9,7 @@ MODEL_NAME = "Qwen/Qwen2.5-0.5B"
 
 AST_VOCAB_PATH = os.path.join(REPO_ROOT, "data", "processed", "ast_vocab.json")
 
-PHASE2_DIR = "/kaggle/input/phase2/content/AST-Code-Generation-2/checkpoints/phase2_lora"
+PHASE2_DIR = "/kaggle/input/phase2/kaggle/working/AST-Code-Generation-2/checkpoints/phase2_lora"
 OUT_DIR = os.path.join(REPO_ROOT, "checkpoints", "merged")
 
 
