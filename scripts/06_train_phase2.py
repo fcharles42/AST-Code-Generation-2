@@ -1,5 +1,5 @@
 # scripts/06_train_phase2.py
-import os, sys, torch
+import os, sys, json, torch
 from torch.utils.data import Dataset
 from transformers import Trainer, TrainingArguments, AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
@@ -17,6 +17,7 @@ if not os.path.exists(PHASE1_DIR):
 
 PHASE2_OUT_DIR = os.path.join(REPO_ROOT, "checkpoints", "phase2_lora")
 
+AST_VOCAB_PATH = os.path.join(REPO_ROOT, "data", "processed", "ast_vocab.json")
 TOKENIZED_PATH = os.path.join(REPO_ROOT, "data", "processed", "phase2_tokenized.pt")
 
 LR = 1e-5
@@ -62,13 +63,17 @@ def main():
         raise FileNotFoundError(f"Missing phase1 checkpoint: {PHASE1_DIR}")
 
     tokenizer = AutoTokenizer.from_pretrained(
-        PHASE1_DIR,
+        MODEL_NAME,
         trust_remote_code=True,
         use_fast=True,
     )
     tokenizer.pad_token = tokenizer.eos_token
 
-    print("[INFO] Loaded tokenizer from phase1")
+    with open(AST_VOCAB_PATH, "r", encoding="utf-8") as f:
+        ast_vocab = json.load(f)
+
+    added = tokenizer.add_tokens(ast_vocab, special_tokens=False)
+    print("[INFO] Added AST tokens:", added)
     print("[INFO] Tokenizer size:", len(tokenizer))
 
     model = AutoModelForCausalLM.from_pretrained(
